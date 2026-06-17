@@ -1,0 +1,57 @@
+// Same pipeline shape as Jenkinsfile.serviceA but driven by a different
+// set of default parameters (the "web-frontend" build).
+@Library('sample-shared-lib') _
+
+pipeline {
+    agent any
+
+    // ---- Parameter set #2 : the "web-frontend" build ----
+    parameters {
+        string(name: 'APP_NAME',    defaultValue: 'web-frontend', description: 'Application to build & deploy')
+        choice(name: 'BUILD_TOOL',  choices: ['npm', 'gradle', 'maven'], description: 'Build tool to use')
+        choice(name: 'ENVIRONMENT', choices: ['staging', 'dev', 'production'], description: 'Target environment')
+        string(name: 'REPLICAS',    defaultValue: '1', description: 'Number of replicas to deploy')
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sayHello name: params.APP_NAME, greeting: 'Building'
+                script {
+                    buildApp(
+                        appName    : params.APP_NAME,
+                        buildTool  : params.BUILD_TOOL,
+                        environment: params.ENVIRONMENT
+                    )
+                }
+            }
+        }
+
+        stage('Test') {
+            // One stage with both steps running in parallel.
+            parallel {
+                stage('Unit Tests') {
+                    steps {
+                        runTests appName: params.APP_NAME, suite: 'unit'
+                    }
+                }
+                stage('Integration Tests') {
+                    steps {
+                        runTests appName: params.APP_NAME, suite: 'integration'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                deployApp(
+                    appName    : params.APP_NAME,
+                    environment: params.ENVIRONMENT,
+                    replicas   : params.REPLICAS as Integer
+                )
+                sendNotification appName: params.APP_NAME, channel: '#frontend'
+            }
+        }
+    }
+}
