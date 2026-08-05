@@ -7,22 +7,23 @@ pipeline {
     agent any
 
     // ---- Parameter set #1 : the "orders-service" build ----
-    parameters {
-        string(name: 'APP_NAME',    defaultValue: 'orders-service', description: 'Application to build & deploy')
-        choice(name: 'BUILD_TOOL',  choices: ['maven', 'gradle', 'npm'], description: 'Build tool to use')
-        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'production'], description: 'Target environment')
-        string(name: 'REPLICAS',    defaultValue: '2', description: 'Number of replicas to deploy')
+    environment {
+        // Optional: set defaults here if the var isn't already in the agent/job env
+        APP_NAME    = "${env.APP_NAME ?: 'orders-service'}"
+        BUILD_TOOL  = "${env.BUILD_TOOL ?: 'maven'}"
+        ENVIRONMENT = "${env.ENVIRONMENT ?: 'dev'}"
+        REPLICAS    = "${env.REPLICAS ?: '2'}"
     }
 
     stages {
         stage('Build') {
             steps {
-                sayHello name: params.APP_NAME, greeting: 'Building'
+                sayHello name: env.APP_NAME, greeting: 'Building'
                 script {
                     buildApp(
-                        appName    : params.APP_NAME,
-                        buildTool  : params.BUILD_TOOL,
-                        environment: params.ENVIRONMENT
+                        appName    : env.APP_NAME,
+                        buildTool  : env.BUILD_TOOL,
+                        environment: env.ENVIRONMENT
                     )
                 }
             }
@@ -33,12 +34,12 @@ pipeline {
             parallel {
                 stage('Unit Tests') {
                     steps {
-                        runTests appName: params.APP_NAME, suite: 'unit'
+                        runTests appName: env.APP_NAME, suite: 'unit'
                     }
                 }
                 stage('Lint') {
                     steps {
-                        runTests appName: params.APP_NAME, suite: 'lint'
+                        runTests appName: env.APP_NAME, suite: 'lint'
                     }
                 }
             }
@@ -47,11 +48,11 @@ pipeline {
         stage('Deploy') {
             steps {
                 deployApp(
-                    appName    : params.APP_NAME,
-                    environment: params.ENVIRONMENT,
-                    replicas   : params.REPLICAS as Integer
+                    appName    : env.APP_NAME,
+                    environment: env.ENVIRONMENT,
+                    replicas   : env.REPLICAS as Integer
                 )
-                sendNotification appName: params.APP_NAME, channel: '#orders'
+                sendNotification appName: env.APP_NAME, channel: '#orders'
             }
         }
     }
