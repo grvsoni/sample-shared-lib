@@ -7,12 +7,12 @@ pipeline {
     agent any
 
     // ---- Parameter set #1 : the "orders-service" build ----
-    environment {
-        // Optional: set defaults here if the var isn't already in the agent/job env
-        APP_NAME    = "${env.APP_NAME ?: 'orders-service'}"
-        BUILD_TOOL  = "${env.BUILD_TOOL ?: 'maven'}"
-        ENVIRONMENT = "${env.ENVIRONMENT ?: 'dev'}"
-        REPLICAS    = "${env.REPLICAS ?: '2'}"
+    parameters {
+        string(name: 'APP_NAME',    defaultValue: 'orders-service', description: 'Application to build & deploy')
+        string(name: 'APP_DIR',     defaultValue: 'orders-service', description: 'Directory (relative to repo root) containing the application')
+        choice(name: 'BUILD_TOOL',  choices: ['maven', 'gradle', 'npm'], description: 'Build tool to use')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'production'], description: 'Target environment')
+        string(name: 'REPLICAS',    defaultValue: '2', description: 'Number of replicas to deploy')
     }
 
     stages {
@@ -21,9 +21,10 @@ pipeline {
                 sayHello name: env.APP_NAME, greeting: 'Building'
                 script {
                     buildApp(
-                        appName    : env.APP_NAME,
-                        buildTool  : env.BUILD_TOOL,
-                        environment: env.ENVIRONMENT
+                        appName    : params.APP_NAME,
+                        buildTool  : params.BUILD_TOOL,
+                        environment: params.ENVIRONMENT,
+                        path       : params.APP_DIR
                     )
                 }
             }
@@ -34,12 +35,12 @@ pipeline {
             parallel {
                 stage('Unit Tests') {
                     steps {
-                        runTests appName: env.APP_NAME, suite: 'unit'
+                        runTests appName: params.APP_NAME, buildTool: params.BUILD_TOOL, suite: 'unit', path: params.APP_DIR
                     }
                 }
                 stage('Lint') {
                     steps {
-                        runTests appName: env.APP_NAME, suite: 'lint'
+                        runTests appName: params.APP_NAME, buildTool: params.BUILD_TOOL, suite: 'lint', path: params.APP_DIR
                     }
                 }
             }

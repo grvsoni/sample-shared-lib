@@ -1,0 +1,13 @@
+{
+  "name": "web-frontend",
+  "version": "1.0.0",
+  "description": "Minimal \"Hello World\" Node app used to exercise the Build/Test/Deploy stages of the sample Jenkins shared-library pipeline.",
+  "main": "index.js",
+  "scripts": {
+    "build": "mkdir -p dist && cp index.js dist/index.js && echo 'Build complete: dist/index.js'",
+    "test": "node test/unit.test.js",
+    "test:integration": "node test/integration.test.js",
+    "start": "node index.js"
+  },
+  "license": "UNLICENSED"
+}
