@@ -8,6 +8,7 @@ pipeline {
     // ---- Parameter set #2 : the "web-frontend" build ----
     parameters {
         string(name: 'APP_NAME',    defaultValue: 'web-frontend', description: 'Application to build & deploy')
+        string(name: 'APP_DIR',     defaultValue: 'web-frontend', description: 'Directory (relative to repo root) containing the application')
         choice(name: 'BUILD_TOOL',  choices: ['npm', 'gradle', 'maven'], description: 'Build tool to use')
         choice(name: 'ENVIRONMENT', choices: ['staging', 'dev', 'production'], description: 'Target environment')
         string(name: 'REPLICAS',    defaultValue: '1', description: 'Number of replicas to deploy')
@@ -21,7 +22,8 @@ pipeline {
                     buildApp(
                         appName    : params.APP_NAME,
                         buildTool  : params.BUILD_TOOL,
-                        environment: params.ENVIRONMENT
+                        environment: params.ENVIRONMENT,
+                        path       : params.APP_DIR
                     )
                 }
             }
@@ -32,12 +34,12 @@ pipeline {
             parallel {
                 stage('Unit Tests') {
                     steps {
-                        runTests appName: params.APP_NAME, suite: 'unit'
+                        runTests appName: params.APP_NAME, buildTool: params.BUILD_TOOL, suite: 'unit', path: params.APP_DIR
                     }
                 }
                 stage('Integration Tests') {
                     steps {
-                        runTests appName: params.APP_NAME, suite: 'integration'
+                        runTests appName: params.APP_NAME, buildTool: params.BUILD_TOOL, suite: 'integration', path: params.APP_DIR
                     }
                 }
             }

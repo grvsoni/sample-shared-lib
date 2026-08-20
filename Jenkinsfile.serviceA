@@ -9,6 +9,7 @@ pipeline {
     // ---- Parameter set #1 : the "orders-service" build ----
     parameters {
         string(name: 'APP_NAME',    defaultValue: 'orders-service', description: 'Application to build & deploy')
+        string(name: 'APP_DIR',     defaultValue: 'orders-service', description: 'Directory (relative to repo root) containing the application')
         choice(name: 'BUILD_TOOL',  choices: ['maven', 'gradle', 'npm'], description: 'Build tool to use')
         choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'production'], description: 'Target environment')
         string(name: 'REPLICAS',    defaultValue: '2', description: 'Number of replicas to deploy')
@@ -22,7 +23,8 @@ pipeline {
                     buildApp(
                         appName    : params.APP_NAME,
                         buildTool  : params.BUILD_TOOL,
-                        environment: params.ENVIRONMENT
+                        environment: params.ENVIRONMENT,
+                        path       : params.APP_DIR
                     )
                 }
             }
@@ -33,12 +35,12 @@ pipeline {
             parallel {
                 stage('Unit Tests') {
                     steps {
-                        runTests appName: params.APP_NAME, suite: 'unit'
+                        runTests appName: params.APP_NAME, buildTool: params.BUILD_TOOL, suite: 'unit', path: params.APP_DIR
                     }
                 }
                 stage('Lint') {
                     steps {
-                        runTests appName: params.APP_NAME, suite: 'lint'
+                        runTests appName: params.APP_NAME, buildTool: params.BUILD_TOOL, suite: 'lint', path: params.APP_DIR
                     }
                 }
             }
